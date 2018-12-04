@@ -6,6 +6,7 @@ class Postit extends React.Component {
 
     ondragstart = (ev, id) => {
         ev.dataTransfer.setData("drag_id", id);
+        ev.dataTransfer.setData("old_category", this.state.task.category);
     };
 
     render() {
@@ -27,36 +28,35 @@ class Column extends React.Component {
 
         this.state = {
             category: props.category,
-            tasks: props.tasks, //props.board.state.task_categories[props.category],
+            tasks: props.tasks,
             bg_color: props.bg_color,
             board: props.board,
             task_list: props.board.state.tasks
         };
+
+        props.board.registerToNotify(this);
     }
 
-    // Used to block standard behavior
     ondragover = (ev) => {
         ev.preventDefault();
     };
 
     ondrop = (ev, category) => {
         let drag_id = ev.dataTransfer.getData("drag_id");
+        let old_category = ev.dataTransfer.getData("old_category");
+
         var tasks = this.state.board.state.tasks.filter((task) => {
-            if (task.name == drag_id) {
+            if (task.name === drag_id) {
                 task.category = category;
             }
             return task;
         });
 
         this.state.board.handleOnDrop(tasks);
-        this.setState({
-            tasks: this.state.board.getTaksByCategories()[this.state.category]
-        })
     };
 
     render() {
-
-
+        console.log(this.state.category);
         return (
             <div className="col-mb-4"
                  onDragOver={(e) => this.ondragover(e)}
@@ -79,12 +79,17 @@ class Board extends React.Component {
         categories: ['wip', 'completed']
     };
 
+    columns = [];
     handleOnDrop = (tasks) => {
         this.setState({
             ...this.state,
             tasks
         });
 
+        var tasks = this.getTaksByCategories();
+        this.columns.forEach((column) => {
+            column.setState({tasks: tasks[column.state.category]});
+        });
     };
 
     getTaksByCategories = () => {
@@ -102,10 +107,15 @@ class Board extends React.Component {
         return task_categories;
     };
 
+    registerToNotify = (column) => {
+        this.columns.push(column);
+    };
+
     render() {
         var task_categories = this.getTaksByCategories();
         var board = this;
         var i = 0;
+        console.log(this.state.tasks);
         return (
             <div className="row">
                 {this.state.categories.map((category) =>
