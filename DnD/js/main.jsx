@@ -41,18 +41,17 @@ class Column extends React.Component {
 
     ondrop = (ev, category) => {
         let drag_id = ev.dataTransfer.getData("drag_id");
-        var tasks = this.state.task_list.filter((task) => {
+        var tasks = this.state.board.state.tasks.filter((task) => {
             if (task.name == drag_id) {
                 task.category = category;
             }
             return task;
         });
 
-        this.state.board.setState({
-            ...this.state,
-            tasks
-        });
-
+        this.state.board.handleOnDrop(tasks);
+        this.setState({
+            tasks: this.state.board.getTaksByCategories()[this.state.category]
+        })
     };
 
     render() {
@@ -73,30 +72,49 @@ class Column extends React.Component {
 class Board extends React.Component {
     state = {
         tasks: [
-            {
-                name: "Task example",
-                category: "wip",
-                bg_color: "yellow"
-            }
+            {name: "Learn Angular", category: "wip", bg_color: "yellow"},
+            {name: "React", category: "wip", bg_color: "pink"},
+            {name: "Vue", category: "completed", bg_color: "skyblue"}
         ],
+        categories: ['wip', 'completed']
+    };
 
-        // task_categories : {wip: [], completed: []}
+    handleOnDrop = (tasks) => {
+        this.setState({
+            ...this.state,
+            tasks
+        });
+
+    };
+
+    getTaksByCategories = () => {
+        var task_categories = {};
+        this.state.categories.map((c) => {
+            task_categories[c] = [];
+        });
+
+        var i = 0;
+        this.state.tasks.forEach((t) => {
+            task_categories[t.category].push(
+                <Postit task={t} key={++i}/>
+            );
+        });
+        return task_categories;
     };
 
     render() {
-        var task_categories = {wip: [], completed: []};
-        this.state.tasks.forEach((t) => {
-            task_categories[t.category].push(
-                new Postit({task: t}).render()
-            );
-        });
-        console.log(task_categories);
-        // this.state.task_categories = task_categories;
-
+        var task_categories = this.getTaksByCategories();
+        var board = this;
+        var i = 0;
         return (
             <div className="row">
-                <Column category="wip" bg_color="grey" board={this} tasks={task_categories["wip"]}/>
-                <Column category="completed" bg_color="darkgrey" board={this} tasks={task_categories["completed"]}/>
+                {this.state.categories.map((category) =>
+                    <Column category={category}
+                            bg_color="darkgrey"
+                            key={++i}
+                            board={board}
+                            tasks={task_categories[category]}/>
+                )}
             </div>
         );
     }
